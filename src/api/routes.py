@@ -1,5 +1,8 @@
+from flask import request, jsonify
 from fastapi import APIRouter, Depends, HTTPException, Body, Request, HTTPException
 from services.job_search import JobHuntingAgent
+from services.pdf_parse import extract_text_from_pdf
+from services.pdf_parse import extract_info_with_gpt
 from models.job_search_model import JobRequirements
 from dotenv import load_dotenv
 import os
@@ -55,8 +58,15 @@ async def token_generator(request: Request):
 
 @router.post("/pdf_data_extract")
 async def extract_pdf_data():
-    
-    pass
+    if "resume" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["resume"]
+
+    extracted_text = extract_text_from_pdf(file)
+    extracted_info = extract_info_with_gpt(extracted_text)
+
+    return jsonify(extracted_info)
 
 @router.post("/find_jobs/")
 async def find_matching_jobs(token:str, job_requirement: JobRequirements = Body()):
